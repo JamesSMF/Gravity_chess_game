@@ -44,7 +44,7 @@ def diag_check(mat):
          if(c==0):
             if(mat[r][c]==mat[r-1][c+1]):
                dp[r][c][1] = dp[r-1][c+1][1] + 1
-         elif(c==5):
+         elif(c==6):
             if(mat[r][c]==mat[r-1][c-1]):
                dp[r][c][0] = dp[r-1][c-1][0] + 1
          else:
