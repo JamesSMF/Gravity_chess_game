@@ -50,7 +50,7 @@ def diag_check(mat):
          else:
             if(mat[r][c]==mat[r-1][c-1]):
                dp[r][c][0] = dp[r-1][c-1][0] + 1
-            elif(mat[r][c]==mat[r-1][c+1]):
+            if(mat[r][c]==mat[r-1][c+1]):
                dp[r][c][1] = dp[r-1][c+1][1] + 1
 
          if(max(dp[r][c])>=4):
