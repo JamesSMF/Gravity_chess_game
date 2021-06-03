@@ -68,7 +68,7 @@ Params:
 '''
 def print_board(mat):
    print()
-   for r in range(5,-1,-1):
+   for r in range(6,-1,-1):
       print(end=' ')
       for c in range(7):
          if(mat[r][c]=='x'):
