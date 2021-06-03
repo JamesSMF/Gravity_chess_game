@@ -80,6 +80,23 @@ def print_board(mat):
       print()
    print(' 1  2  3  4  5  6  7\n')
 
+def x_wins():
+   print()
+   print('   XXX   XXX    WWW     WW      WWW  IIIIII  NNN     NN   SSSSS')
+   print('    XXX XXX     WWW    WW WW    WWW    II    NN NN   NN  SS')
+   print('      XXX        WWW  WW   WW  WWW     II    NN  NN  NN   SSSSSS')
+   print('    XXX XXX      WWW WW     WW WWW     II    NN   NN NN        SS')
+   print('   XXX   XXX      WWW        WWW     IIIIII  NN     NNN   SSSSSS')
+   print()
+
+def o_wins():
+   print()
+   print('     OOO        WWW     WW      WWW  IIIIII  NNN     NN   SSSSS')
+   print('   OO   OO      WWW    WW WW    WWW    II    NN NN   NN  SS')
+   print('  OOO   OOO      WWW  WW   WW  WWW     II    NN  NN  NN   SSSSSS')
+   print('   OO   OO       WWW WW     WW WWW     II    NN   NN NN        SS')
+   print('     OOO          WWW        WWW     IIIIII  NN     NNN   SSSSSS')
+   print()
 
 board = [[' ' for col in range(7)] for row in range(7)]
 height = {i:0 for i in range(7)}
@@ -114,5 +131,5 @@ while(True):
 
    print_board(board)
    if(winner!='n'):
-      print(winner, ' wins!')
+      x_wins() if winner=='x' else o_wins()
       break
