@@ -1,4 +1,5 @@
 from colorama import Fore, init  # for color print
+import os
 init(autoreset=True)
 
 '''
@@ -114,6 +115,8 @@ while(True):
       col = int(input("This column is full. Choose another column: ")) - 1
    while(col>=7):
       col = int(input("Please enter number 1 - 7:  ")) - 1
+
+   os.system('clear')
 
    if(rd==1):
       board[height[col]][col] = 'x'
