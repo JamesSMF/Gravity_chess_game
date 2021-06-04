@@ -102,26 +102,44 @@ def o_wins():
 board = [[' ' for col in range(7)] for row in range(7)]
 height = {i:0 for i in range(7)}
 rd = 1
+rd_num = 0
 
 while(True):
+   if(rd_num==48):
+      print('Checkmate!')
+      break
+
    if(rd==1):
       print('Round for x')
    else:
       print('Round for o')
 
-   col = int(input("Select a column to place a chess: (enter number) ")) - 1
+   col = input("Select a column to place a chess: (enter number) ")
 
-   while(height[col]>=7):
-      col = int(input("This column is full. Choose another column: ")) - 1
-   while(col>=7):
-      col = int(input("Please enter number 1 - 7:  ")) - 1
+   # If that motherfucker regrets
+   if(rd_num!=0 and col=='regret'):
+      rd = -rd
+      board[record[0]][record[1]] = ' '
+      height[record[1]] -= 1
+      os.system('clear')
+      print_board(board)
+      col = input("OK, you regretted. Enter the column number:  ")
 
+   while(not col.isnumeric() or int(col)>7 or int(col)<1 or height[int(col)-1]>=7):
+      if(not col.isnumeric() or int(col)>7 or int(col)<1):
+         col = input("Please enter number 1 - 7:  ")
+      elif(height[int(col)-1]>=7):
+         col = input("This column is full. Choose another column: ")
+
+   col = int(col) - 1
    os.system('clear')
 
    if(rd==1):
       board[height[col]][col] = 'x'
    else:
       board[height[col]][col] = 'o'
+
+   record = [height[col], col]
 
    rd = -rd
    height[col] += 1
@@ -136,3 +154,5 @@ while(True):
    if(winner!='n'):
       x_wins() if winner=='x' else o_wins()
       break
+
+   rd_num += 1
