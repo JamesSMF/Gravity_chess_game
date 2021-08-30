@@ -1,5 +1,5 @@
 from colorama import Fore, init  # for color print
-import os
+import os, sys
 init(autoreset=True)
 
 '''
@@ -9,15 +9,16 @@ check_win:
 
 Params:
    mat: the input matrix
+   size: board size
 '''
-def check_win(mat):
-   for row in range(7):
+def check_win(mat, size):
+   for row in range(size):
       i = j = count = 0
-      for i in range(7):
-         while(i<7 and mat[row][i]==' '):
+      for i in range(size):
+         while(i<size and mat[row][i]==' '):
             i += 1
          j = i
-         while(j<7 and mat[row][i]==mat[row][j]):
+         while(j<size and mat[row][i]==mat[row][j]):
             j += 1
          count = max(count, j-i)
          if(count>=4):
@@ -35,11 +36,12 @@ Params:
    dp: the DP tensor
       for each entry (a,b), a stands for the longest left diagnal, and b
       stands for the longest right diagnal.
+   size: board size
 '''
-def diag_check(mat):
-   dp = [[[1,1] for col in range(7)] for row in range(7)]
-   for r in range(7):
-      for c in range(7):
+def diag_check(mat, size):
+   dp = [[[1,1] for col in range(size)] for row in range(size)]
+   for r in range(size):
+      for c in range(size):
          if(r==0 or mat[r][c]==' '):
             continue
          if(c==0):
@@ -66,12 +68,13 @@ print_board:
 
 Params:
    mat: the chessboard
+   size: board size
 '''
-def print_board(mat):
+def print_board(mat, size):
    print()
-   for r in range(6,-1,-1):
+   for r in range(size-1,-1,-1):
       print(end=' ')
-      for c in range(7):
+      for c in range(size):
          if(mat[r][c]=='x'):
             print(Fore.BLUE + mat[r][c], end='  ')
          elif(mat[r][c]=='o'):
@@ -79,7 +82,42 @@ def print_board(mat):
          else:
             print(Fore.YELLOW + mat[r][c], end='  ')
       print()
-   print(' 1  2  3  4  5  6  7\n')
+
+   print(end=' ')
+   for i in range(size):
+      print(i+1, end='  ')
+   print()
+
+'''
+grid_board:
+   print out the chessboard with grids
+
+Params:
+   mat: the chessboard
+   size: board size
+'''
+def grid_board(mat, size):
+   for i in range(size):
+      print('----', end='')
+   print()
+   for r in range(size-1,-1,-1):
+      print(end='| ')
+      for c in range(size):
+         if(mat[r][c]=='x'):
+            print(Fore.BLUE + mat[r][c], end=' | ')
+         elif(mat[r][c]=='o'):
+            print(Fore.RED + mat[r][c], end=' | ')
+         else:
+            print(Fore.YELLOW + mat[r][c], end=' | ')
+      print()
+      for i in range(size):
+         print('----', end='')
+      print()
+
+   print(end='  ')
+   for i in range(size):
+      print(i+1, end='   ')
+   print()
 
 def x_wins():
    print()
@@ -99,8 +137,17 @@ def o_wins():
    print('     OOO          WWW        WWW     IIIIII  NN     NNN   SSSSSS')
    print()
 
-board = [[' ' for col in range(7)] for row in range(7)]
-height = {i:0 for i in range(7)}
+size = 7
+grid = False
+if('-s' in sys.argv):
+   size = int(sys.argv[sys.argv.index('-s') + 1])
+   assert(str(size).isdigit())
+   assert(size>3)
+if('-grid' in sys.argv or '--grid' in sys.argv):
+   grid = True
+
+board = [[' ' for col in range(size)] for row in range(size)]
+height = {i:0 for i in range(size)}
 rd = 1
 rd_num = 0
 
@@ -119,16 +166,20 @@ while(True):
    # If that motherfucker regrets
    if(rd_num!=0 and col=='regret'):
       rd = -rd
+      rd_num -= 1
       board[record[0]][record[1]] = ' '
       height[record[1]] -= 1
       os.system('clear')
-      print_board(board)
+      if(grid):
+         grid_board(board, size)
+      elif(len(sys.argv)==1):
+         print_board(board, size)
       col = input("OK, you regretted. Enter the column number:  ")
 
-   while(not col.isnumeric() or int(col)>7 or int(col)<1 or height[int(col)-1]>=7):
-      if(not col.isnumeric() or int(col)>7 or int(col)<1):
-         col = input("Please enter number 1 - 7:  ")
-      elif(height[int(col)-1]>=7):
+   while(not col.isnumeric() or int(col)>size or int(col)<1 or height[int(col)-1]>=size):
+      if(not col.isnumeric() or int(col)>size or int(col)<1):
+         col = input("Please enter number 1 -"+str(size)+':')
+      elif(height[int(col)-1]>=size):
          col = input("This column is full. Choose another column: ")
 
    col = int(col) - 1
@@ -144,13 +195,16 @@ while(True):
    rd = -rd
    height[col] += 1
 
-   winner = check_win(board)
+   winner = check_win(board, size)
    if(winner=='n'):
-      winner = check_win(list(zip(*board)))
+      winner = check_win(list(zip(*board)), size)
       if(winner=='n'):
-         winner = diag_check(board)
+         winner = diag_check(board, size)
 
-   print_board(board)
+   if(grid):
+      grid_board(board, size)
+   else:
+      print_board(board, size)
    if(winner!='n'):
       x_wins() if winner=='x' else o_wins()
       break
