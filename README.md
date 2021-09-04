@@ -5,7 +5,9 @@
 ## Introduction
 This is a novel chess game coded up by James Li. I also built a simple AI agent using Q-learning algorithm. This algorithm is coded up from scratch using numpy only. Have fun with this project :)
 
+<p align="center">
 <img src="sample_play.gif" width="250"/>
+</p>
 
 ## Rules
 In a traditional tic-tac-toe game, two players put `x` or `o` on the chessboard by turns. If one of the players got 3 chesses of the same kind on the same row, or the same column, or the same diagnal, this player wins the game.
