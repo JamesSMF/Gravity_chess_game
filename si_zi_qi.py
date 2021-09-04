@@ -199,7 +199,6 @@ def code_to_board(code):
 
    return board
 
-<<<<<<< HEAD
 '''
 This function checks if the opponent is about to win the game.
 If so, it returns the corresponding column number, otherwise -1.
@@ -243,8 +242,6 @@ def check_horizontal(board, height):
       return [-1, 0]
 
 
-=======
->>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
 def calc_reward(code, flag):
    board = code_to_board(decode(code))
    winner = check_win(board, 7)
@@ -271,7 +268,6 @@ def calc_reward(code, flag):
 
    return reward
 
-<<<<<<< HEAD
 def playerVScomputer(q_table):
    board = [[' ' for col in range(7)] for row in range(7)]
    height = {i:0 for i in range(7)}
@@ -354,8 +350,6 @@ def playerVScomputer(q_table):
    return q_table
 
 
-=======
->>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
 size = 7
 grid = False
 
@@ -363,10 +357,7 @@ if('-grid' in sys.argv or '--grid' in sys.argv):
    grid = True
 
 # Player v.s. Computer
-<<<<<<< HEAD
 # Computer v.s. Computer
-=======
->>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
 if('-rl' in sys.argv):
    # If the player decides to play with the computer
    # enter reinforcement learning mode.
@@ -374,7 +365,6 @@ if('-rl' in sys.argv):
    # Well if you do this, python will allocate more than 3 EiB memory space
    # Note: 1 EiB = 1024 PiB = 1024*1024 TiB = 1024^3 GiB
    # Only Google can afford this ...
-<<<<<<< HEAD
 
    #  if(os.path.isfile('Q_table.npy')):
       #  q_table = np.load('Q_table.npy')
@@ -386,7 +376,6 @@ if('-rl' in sys.argv):
    # confronted states.
 
    print('Loading AI data...')
-=======
 
    #  if(os.path.isfile('Q_table.npy')):
       #  q_table = np.load('Q_table.npy')
@@ -397,14 +386,12 @@ if('-rl' in sys.argv):
    # states are unreachable. Therefore, we only need to create q tables for those
    # confronted states.
 
->>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
    if(os.path.isfile('Q_table.pkl')):
       with open('Q_table.pkl', 'rb') as f:
          q_table = pickle.load(f)
    else:
       # initial state
       q_table = {0: np.random.uniform(size=7)}
-<<<<<<< HEAD
 
    if(os.path.isfile('Opp_table.pkl')):
       with open('Opp_table.pkl', 'rb') as f:
@@ -664,8 +651,6 @@ else:
       if(rd_num==size**2-1):
          print('Checkmate!')
          break
-
-=======
 
    if(os.path.isfile('Opp_table.pkl')):
       with open('Opp_table.pkl', 'rb') as f:
