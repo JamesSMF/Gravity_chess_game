@@ -376,16 +376,6 @@ if('-rl' in sys.argv):
    # confronted states.
 
    print('Loading AI data...')
-
-   #  if(os.path.isfile('Q_table.npy')):
-      #  q_table = np.load('Q_table.npy')
-   #  else:
-      #  q_table = np.random.uniform(size=(70110209207109375, 7))
-
-   # Solution: By observing the state space, it is not hard to find that most
-   # states are unreachable. Therefore, we only need to create q tables for those
-   # confronted states.
-
    if(os.path.isfile('Q_table.pkl')):
       with open('Q_table.pkl', 'rb') as f:
          q_table = pickle.load(f)
@@ -404,7 +394,7 @@ if('-rl' in sys.argv):
       x_win_c = 0
       o_win_c = 0
       epoch = 0
-      for i in range(500000):
+      for i in range(100000):
          epoch += 1
 
          print('epoch', epoch, '     Q table size:', len(q_table), '     Opp table size:', len(opp_table))
@@ -634,176 +624,6 @@ if('-rl' in sys.argv):
    with open('Opp_table.pkl', 'wb') as f:
       pickle.dump(opp_table, f)
 
-
-# Player v.s. Player
-else:
-   if('-s' in sys.argv):
-      size = int(sys.argv[sys.argv.index('-s') + 1])
-      assert(str(size).isdigit())
-      assert(size>3 and size<20)
-
-   board = [[' ' for col in range(size)] for row in range(size)]
-   height = {i:0 for i in range(size)}
-   rd = 1
-   rd_num = 0
-
-   while(True):
-      if(rd_num==size**2-1):
-         print('Checkmate!')
-         break
-
-   if(os.path.isfile('Opp_table.pkl')):
-      with open('Opp_table.pkl', 'rb') as f:
-         opp_table = pickle.load(f)
-   else:
-      opp_table = dict()
-
-   board = [[' ' for col in range(7)] for row in range(7)]
-   height = {i:0 for i in range(7)}
-   rd = 1
-   rd_num = 0
-   last_code = 0
-   last_move = 0
-
-   # Hyper-params
-   alpha = 0.2
-   gamma = 0.6
-
-   while(True):
-      if(rd_num==48):
-         print('Checkmate!')
-         break
-
-      if(rd==1):
-         # Computer's Round
-         print('Round for x')
-         #  sleep(0.5)
-
-         # get the code for the current board status
-         current_code = encode(board, height)
-         if(current_code not in q_table):
-            q_table[current_code] = np.random.uniform(size=7)
-
-         next_move = 0
-         new_code = 0
-         sleep(0.2)
-
-         # if the agent is in training mode
-         if('-train' in sys.argv):
-            epsilon = random.uniform(0, 1)
-
-            # random move
-            if(epsilon<0.1):
-               next_move = random.randint(0, 6)
-
-            # move according to the max q_table entry
-            else:
-               next_move = np.argmax(q_table[current_code])
-
-            last_code, last_move = current_code, next_move  # save the current state and action
-
-            print("Computer placed at column", next_move+1)
-
-            board[height[next_move]][next_move] = 'x'
-            height[next_move] += 1
-            new_code = encode(board, height)
-            reward = calc_reward(new_code, 1)
-            old_value = q_table[current_code][next_move]
-
-            if(new_code not in opp_table):
-               opp_table[new_code] = np.random.uniform(size=7)
-
-            # 这里应该是从对手视角最优决策
-            opp_next_move = np.argmax(opp_table[new_code])
-            k = 1
-            while(height[opp_next_move]>=7):
-               np.argsort(np.max(opp_table[new_code]))[-k]
-               k += 1
-
-            board[height[opp_next_move]][opp_next_move] = 'o'
-            height[opp_next_move] += 1
-
-            # 假设对手走了最牛逼的一步，咱们应该怎么应对？
-            # aka Mini Max
-            new_code = encode(board, height)
-            if(new_code not in q_table):
-               q_table[new_code] = np.random.uniform(size=7)
-
-            next_max = np.max(q_table[new_code])
-
-            # 刚刚只是假想，现在还原棋盘
-            height[opp_next_move] -= 1
-            board[height[opp_next_move]][opp_next_move] = ' '
-
-            # Update q_table
-            new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
-            q_table[current_code][next_move] = new_value
-
-      else:
-         # Player's Round
-         print('Round for o')
-
-         col = input("Select a column to place a chess: (enter number) ")
-
-         # If that motherfucker regrets
-         if(rd_num!=0 and col=='regret'):
-            rd = -rd
-            rd_num -= 1
-            board[record[0]][record[1]] = ' '
-            height[record[1]] -= 1
-            os.system('clear')
-            if(grid):
-               grid_board(board, size)
-            elif(len(sys.argv)==1):
-               print_board(board, size)
-            col = input("OK, you regretted. Enter the column number:  ")
-
-         while(not col.isnumeric() or int(col)>size or int(col)<1 or height[int(col)-1]>=size):
-            if(not col.isnumeric() or int(col)>size or int(col)<1):
-               col = input("Please enter number 1 -"+str(size)+':')
-            elif(height[int(col)-1]>=size):
-               col = input("This column is full. Choose another column: ")
-
-         col = int(col) - 1
-         os.system('clear')
-
-         record = [height[col], col]
-         board[height[col]][col] = 'o'
-         height[col] += 1
-
-
-      rd = -rd
-
-      winner = check_win(board, 7)
-      if(winner=='n'):
-         winner = check_win(list(zip(*board)), 7)
-         if(winner=='n'):
-            winner = diag_check(board, 7)
-
-      if(grid):
-         grid_board(board, 7)
-      else:
-         print_board(board, 7)
-      if(winner!='n'):
-         if(winner=='x'):
-            x_wins()
-            old_value = q_table[last_code][last_move]
-            new_value = (1 - alpha) * old_value + alpha * 100
-            q_table[last_code][last_move] = new_value
-         else:
-            o_wins()
-            old_value = q_table[last_code][last_move]
-            new_value = (1 - alpha) * old_value - alpha * 50
-            q_table[last_code][last_move] = new_value
-         break
-
-      rd_num += 1
-
-   # Save the partial Q-table as a dict
-   with open('Q_table.pkl', 'wb') as f:
-      pickle.dump(q_table, f)
-   with open('Opp_table.pkl', 'wb') as f:
-      pickle.dump(opp_table, f)
 
 # Player v.s. Player
 else:
