@@ -199,6 +199,52 @@ def code_to_board(code):
 
    return board
 
+<<<<<<< HEAD
+'''
+This function checks if the opponent is about to win the game.
+If so, it returns the corresponding column number, otherwise -1.
+'''
+def check_opp_win(board, height, rd):
+   for c in range(7):
+      if(height[c]>=7 or height[c]<3):
+         continue
+
+      three = True
+      opp_three = True
+      for chess in range(height[c]-1, height[c]-4, -1):
+         if(board[chess][c]!=rd):
+            three = False
+         else:
+            opp_three = False
+
+      if(three):  # current player is about to win
+         return [c, 1]
+
+      if(opp_three):    # opponent about to win
+         return [c, -1]
+
+   return [-1, 0]
+
+
+def check_horizontal(board, height):
+   left, right = 0, 0
+   for c in range(1, 7):
+      if(height[c]==height[left] and board[height[c]-1][c]==board[height[left]-1][left]):
+         right = c
+      else:
+         left = c
+
+      if(right - left > 0 and left != 0 and right != 7):
+         if(height[left-1]==height[left]-1):
+            return [left-1, 1]
+         elif(height[right+1]==height[right]-1):
+            return [right+1, 1]
+
+      return [-1, 0]
+
+
+=======
+>>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
 def calc_reward(code, flag):
    board = code_to_board(decode(code))
    winner = check_win(board, 7)
@@ -225,6 +271,91 @@ def calc_reward(code, flag):
 
    return reward
 
+<<<<<<< HEAD
+def playerVScomputer(q_table):
+   board = [[' ' for col in range(7)] for row in range(7)]
+   height = {i:0 for i in range(7)}
+   rd = 1
+   rd_num = 0
+
+   while(True):
+      if(rd_num==48):
+         print('Checkmate!')
+         break
+
+      if(rd==1):
+         print('Round for x')
+         current_code = encode(board, height)
+
+         if(current_code not in q_table):
+            q_table[current_code] = np.random.uniform(size=7)
+
+         next_move = np.argmax(q_table[current_code])
+
+         k = 6
+         while(height[next_move]>=7):
+            next_move = np.where(np.argsort(q_table[current_code])==k)[0][0]
+            k -= 1
+
+         board[height[next_move]][next_move] = 'x'
+         height[next_move] += 1
+
+      else:
+         # Player's Round
+
+         print('Round for o')
+         col = input("Select a column to place a chess: (enter number) ")
+
+         # If that motherfucker regrets
+         if(rd_num!=0 and col=='regret'):
+            rd = -rd
+            rd_num -= 1
+            board[record[0]][record[1]] = ' '
+            height[record[1]] -= 1
+            os.system('clear')
+            if(grid):
+               grid_board(board, size)
+            elif(len(sys.argv)==1):
+               print_board(board, size)
+            col = input("OK, you regretted. Enter the column number:  ")
+
+         while(not col.isnumeric() or int(col)>size or int(col)<1 or height[int(col)-1]>=size):
+            if(not col.isnumeric() or int(col)>size or int(col)<1):
+               col = input("Please enter number 1 -"+str(size)+':')
+            elif(height[int(col)-1]>=size):
+               col = input("This column is full. Choose another column: ")
+
+         col = int(col) - 1
+         os.system('clear')
+
+         record = [height[col], col]
+         board[height[col]][col] = 'o'
+         height[col] += 1
+
+      rd = -rd
+
+      winner = check_win(board, 7)
+      if(winner=='n'):
+         winner = check_win(list(zip(*board)), 7)
+         if(winner=='n'):
+            winner = diag_check(board, 7)
+
+      if(grid):
+         grid_board(board, 7)
+      else:
+         print_board(board, 7)
+
+      if(winner!='n'):
+         x_wins() if winner=='x' else o_wins()
+         break
+
+      rd_num += 1
+
+   return q_table
+
+
+=======
+>>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
 size = 7
 grid = False
 
@@ -232,6 +363,10 @@ if('-grid' in sys.argv or '--grid' in sys.argv):
    grid = True
 
 # Player v.s. Computer
+<<<<<<< HEAD
+# Computer v.s. Computer
+=======
+>>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
 if('-rl' in sys.argv):
    # If the player decides to play with the computer
    # enter reinforcement learning mode.
@@ -239,6 +374,7 @@ if('-rl' in sys.argv):
    # Well if you do this, python will allocate more than 3 EiB memory space
    # Note: 1 EiB = 1024 PiB = 1024*1024 TiB = 1024^3 GiB
    # Only Google can afford this ...
+<<<<<<< HEAD
 
    #  if(os.path.isfile('Q_table.npy')):
       #  q_table = np.load('Q_table.npy')
@@ -249,12 +385,287 @@ if('-rl' in sys.argv):
    # states are unreachable. Therefore, we only need to create q tables for those
    # confronted states.
 
+   print('Loading AI data...')
+=======
+
+   #  if(os.path.isfile('Q_table.npy')):
+      #  q_table = np.load('Q_table.npy')
+   #  else:
+      #  q_table = np.random.uniform(size=(70110209207109375, 7))
+
+   # Solution: By observing the state space, it is not hard to find that most
+   # states are unreachable. Therefore, we only need to create q tables for those
+   # confronted states.
+
+>>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
    if(os.path.isfile('Q_table.pkl')):
       with open('Q_table.pkl', 'rb') as f:
          q_table = pickle.load(f)
    else:
       # initial state
       q_table = {0: np.random.uniform(size=7)}
+<<<<<<< HEAD
+
+   if(os.path.isfile('Opp_table.pkl')):
+      with open('Opp_table.pkl', 'rb') as f:
+         opp_table = pickle.load(f)
+   else:
+      opp_table = dict()
+
+   # if the agent is in training mode
+   if('-train' in sys.argv):
+      x_win_c = 0
+      o_win_c = 0
+      epoch = 0
+      for i in range(500000):
+         epoch += 1
+
+         print('epoch', epoch, '     Q table size:', len(q_table), '     Opp table size:', len(opp_table))
+         board = [[' ' for col in range(7)] for row in range(7)]
+         height = {i:0 for i in range(7)}
+         rd = 1
+         rd_num = 0
+         last_code = 0
+         last_move = 0
+
+         # Hyper-params
+         alpha = 0.2
+         gamma = 0.6
+
+         while(True):
+            if(rd_num==48):
+               print('Checkmate!')
+               break
+
+            if(rd==1):
+               # Computer's Round
+               #  print('Round for x')
+
+               # get the code for the current board status
+               current_code = encode(board, height)
+               if(current_code not in q_table):
+                  q_table[current_code] = np.random.uniform(size=7)
+
+               # Check if current player is about to win or its opponent is about to win
+               col, sign = check_opp_win(board, height, 'x')
+               if(sign!=0):
+                  q_table[current_code][col] += 100000
+
+               col, sign = check_horizontal(board, height)
+               if(sign!=0):
+                  q_table[current_code][col] += 500
+
+               next_move = 0
+               new_code = 0
+               #  sleep(0.1)
+
+               epsilon = random.uniform(0, 1)
+
+               # random move
+               if(epsilon<0.1):
+                  next_move = random.randint(0, 6)
+
+               # move according to the max q_table entry
+               else:
+                  next_move = np.argmax(q_table[current_code])
+
+               last_code, last_move = current_code, next_move  # save the current state and action
+
+               #  print("Computer placed at column", next_move+1)
+
+               k = 6
+               while(height[next_move]>=7):
+                  next_move = np.where(np.argsort(q_table[current_code])==k)[0][0]
+                  k -= 1
+
+               board[height[next_move]][next_move] = 'x'
+               height[next_move] += 1
+               new_code = encode(board, height)
+               reward = calc_reward(new_code, 1)
+               old_value = q_table[current_code][next_move]
+
+               if(new_code not in opp_table):
+                  opp_table[new_code] = np.random.uniform(size=7)
+
+               # 这里应该是从对手视角最优决策
+               opp_next_move = np.argmax(opp_table[new_code])
+               k = 6
+               while(height[opp_next_move]>=7):
+                  opp_next_move = np.where(np.argsort(opp_table[new_code])==k)[0][0]
+                  k -= 1
+
+               board[height[opp_next_move]][opp_next_move] = 'o'
+               height[opp_next_move] += 1
+
+               # 假设对手走了最牛逼的一步，咱们应该怎么应对？
+               # aka Mini Max
+               new_code = encode(board, height)
+               if(new_code not in q_table):
+                  q_table[new_code] = np.random.uniform(size=7)
+
+               next_max = np.max(q_table[new_code])
+
+               # 刚刚只是假想，现在还原棋盘
+               height[opp_next_move] -= 1
+               board[height[opp_next_move]][opp_next_move] = ' '
+
+               # Update q_table
+               new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+               q_table[current_code][next_move] = new_value
+
+            else:
+               #  print('Round for o')
+
+               current_code = encode(board, height)
+               if(current_code not in opp_table):
+                  opp_table[current_code] = np.random.uniform(size=7)
+
+               # Check if current player is about to win or its opponent is about to win
+               col, sign = check_opp_win(board, height, 'o')
+               if(sign==1 or sign==-1):
+                  opp_table[current_code][col] += 100000
+
+               col, sign = check_horizontal(board, height)
+               if(sign!=0):
+                  opp_table[current_code][col] += 500
+
+               next_move = 0
+               new_code = 0
+               #  sleep(0.1)
+
+               epsilon = random.uniform(0, 1)
+
+               # random move
+               if(epsilon<0.1):
+                  next_move = random.randint(0, 6)
+
+               # move according to the max q_table entry
+               else:
+                  next_move = np.argmax(opp_table[current_code])
+
+               opp_last_code, opp_last_move = current_code, next_move  # save the current state and action
+
+               #  print("Computer placed at column", next_move+1)
+
+               k = 6
+               while(height[next_move]>=7):
+                  next_move = np.where(np.argsort(opp_table[current_code])==k)[0][0]
+                  k -= 1
+               board[height[next_move]][next_move] = 'o'
+               height[next_move] += 1
+               new_code = encode(board, height)
+               reward = calc_reward(new_code, 0)
+               old_value = opp_table[current_code][next_move]
+
+               if(new_code not in q_table):
+                  q_table[new_code] = np.random.uniform(size=7)
+
+               q_next_move = np.argmax(q_table[new_code])
+               k = 6
+               while(height[q_next_move]>=7):
+                  q_next_move = np.where(np.argsort(q_table[new_code])==k)[0][0]
+                  k -= 1
+
+               board[height[q_next_move]][q_next_move] = 'x'
+               height[q_next_move] += 1
+
+               # 假设对手走了最牛逼的一步，咱们应该怎么应对？
+               # aka Mini Max
+               new_code = encode(board, height)
+               if(new_code not in opp_table):
+                  opp_table[new_code] = np.random.uniform(size=7)
+
+               next_max = np.max(opp_table[new_code])
+
+               # 刚刚只是假想，现在还原棋盘
+               height[q_next_move] -= 1
+               board[height[q_next_move]][q_next_move] = ' '
+
+               # Update q_table
+               new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+               opp_table[current_code][next_move] = new_value
+
+            rd = -rd
+
+            winner = check_win(board, 7)
+            if(winner=='n'):
+               winner = check_win(list(zip(*board)), 7)
+               if(winner=='n'):
+                  winner = diag_check(board, 7)
+
+            #  if(grid):
+               #  grid_board(board, 7)
+            #  else:
+               #  print_board(board, 7)
+            if(winner!='n'):
+               if(winner=='x'):
+                  #  x_wins()
+                  x_win_c += 1
+                  for mv in range(7):
+                     if(mv==last_move):
+                        q_table[last_code][last_move] += 100000
+                     else:
+                        q_table[last_code][mv] -= 100000
+
+                  try:
+                     old_value = opp_table[opp_last_code][opp_last_move]
+                     new_value = (1 - alpha) * old_value - alpha * 50
+                     opp_table[opp_last_code][opp_last_move] = new_value
+                  except:
+                     pass
+               else:
+                  #  o_wins()
+                  o_win_c += 1
+                  try:
+                     for mv in range(7):
+                        if(mv==last_move):
+                           opp_table[opp_last_code][opp_last_move] += 100000
+                        else:
+                           opp_table[opp_last_code][mv] -= 100000
+                  except:
+                     pass
+
+                  old_value = q_table[last_code][last_move]
+                  new_value = (1 - alpha) * old_value - alpha * 50
+                  q_table[last_code][last_move] = new_value
+
+               break
+
+            rd_num += 1
+
+         print('round counts:', rd_num)
+
+      print('x wins:', x_win_c)
+      print('o wins:', o_win_c)
+   else:
+      q_table = playerVScomputer(q_table)
+
+   print('Saving AI data...')
+   # Save the partial Q-table as a dict
+   with open('Q_table.pkl', 'wb') as f:
+      pickle.dump(q_table, f)
+   with open('Opp_table.pkl', 'wb') as f:
+      pickle.dump(opp_table, f)
+
+
+# Player v.s. Player
+else:
+   if('-s' in sys.argv):
+      size = int(sys.argv[sys.argv.index('-s') + 1])
+      assert(str(size).isdigit())
+      assert(size>3 and size<20)
+
+   board = [[' ' for col in range(size)] for row in range(size)]
+   height = {i:0 for i in range(size)}
+   rd = 1
+   rd_num = 0
+
+   while(True):
+      if(rd_num==size**2-1):
+         print('Checkmate!')
+         break
+
+=======
 
    if(os.path.isfile('Opp_table.pkl')):
       with open('Opp_table.pkl', 'rb') as f:
@@ -426,6 +837,7 @@ else:
          print('Checkmate!')
          break
 
+>>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
       if(rd==1):
          print('Round for x')
       else:
