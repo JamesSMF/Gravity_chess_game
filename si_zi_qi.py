@@ -822,7 +822,6 @@ else:
          print('Checkmate!')
          break
 
->>>>>>> 0ab67901e5281d243029191843df5fe4366c81cf
       if(rd==1):
          print('Round for x')
       else:
