@@ -234,10 +234,14 @@ def check_horizontal(board, height):
          left = c
 
       if(right - left > 0 and left != 0 and right != 7):
-         if(height[left-1]==height[left]-1):
+         if(height[left-1]==height[left]-1 or height[left]==1):
             return [left-1, 1]
-         elif(height[right+1]==height[right]-1):
+         elif(height[right+1]==height[right]-1 or height[right]==1):
             return [right+1, 1]
+         elif(height[left-1]==height[left]-2):
+            return [left-1, 2]
+         elif(height[right+1]==height[right]-2):
+            return [right+1, 2]
 
       return [-1, 0]
 
@@ -285,6 +289,19 @@ def playerVScomputer(q_table):
 
          if(current_code not in q_table):
             q_table[current_code] = np.random.uniform(size=7)
+
+         # Check if current player is about to win or its opponent is about to win
+         col, sign = check_opp_win(board, height, 'x')
+         if(sign!=0):
+            for i in range(7):
+               q_table[current_code][i] = -100000
+            q_table[current_code][col] += 200000
+
+         col, sign = check_horizontal(board, height)
+         if(sign==0):
+            q_table[current_code][col] += 50
+         elif(sign==2):
+            q_table[current_code][col] -= 20
 
          next_move = np.argmax(q_table[current_code])
 
@@ -342,7 +359,13 @@ def playerVScomputer(q_table):
          print_board(board, 7)
 
       if(winner!='n'):
-         x_wins() if winner=='x' else o_wins()
+         if(winner=='x'):
+            q_table[current_code][next_move] += 500
+            x_wins()
+         else:
+            q_table[current_code][next_move] -= 100
+            q_table[current_code][col] += 5
+            o_wins()
          break
 
       rd_num += 1
@@ -394,7 +417,7 @@ if('-rl' in sys.argv):
       x_win_c = 0
       o_win_c = 0
       epoch = 0
-      for i in range(100000):
+      for i in range(200000):
          epoch += 1
 
          print('epoch', epoch, '     Q table size:', len(q_table), '     Opp table size:', len(opp_table))
@@ -429,8 +452,10 @@ if('-rl' in sys.argv):
                   q_table[current_code][col] += 100000
 
                col, sign = check_horizontal(board, height)
-               if(sign!=0):
-                  q_table[current_code][col] += 500
+               if(sign==1):
+                  q_table[current_code][col] += 50
+               elif(sign==2):
+                  q_table[current_code][col] -= 20
 
                next_move = 0
                new_code = 0
@@ -503,8 +528,10 @@ if('-rl' in sys.argv):
                   opp_table[current_code][col] += 100000
 
                col, sign = check_horizontal(board, height)
-               if(sign!=0):
-                  opp_table[current_code][col] += 500
+               if(sign==1):
+                  opp_table[current_code][col] += 50
+               elif(sign==2):
+                  opp_table[current_code][col] -= 20
 
                next_move = 0
                new_code = 0
@@ -621,8 +648,10 @@ if('-rl' in sys.argv):
    # Save the partial Q-table as a dict
    with open('Q_table.pkl', 'wb') as f:
       pickle.dump(q_table, f)
-   with open('Opp_table.pkl', 'wb') as f:
-      pickle.dump(opp_table, f)
+
+   if('-train' in sys.argv):
+      with open('Opp_table.pkl', 'wb') as f:
+         pickle.dump(opp_table, f)
 
 
 # Player v.s. Player
