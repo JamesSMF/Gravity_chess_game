@@ -25,3 +25,4 @@ Gravity chess game is similar, except that you have to got 4 chesses of the same
 + Add `-size <size>` to custom chessboard size (maximum 19x19)
 + Add `-rl` for player v.s. computer mode (note that size is fixed to 7x7 in this mode, and the original model is untrained, which means the AI agent is stupid at this stage. You need to train it first.)
 + Add `-rl -train` to train the model (default 500000 epochs)
++ After training the model, you may finetune it with `python3 si_zi_qi.py -rl -finetune`. This is not required to get the model running, but testing result shows that finetuning enhances the performance to a large extent. (default 50000 epochs)

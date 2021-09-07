@@ -4,6 +4,7 @@ from time import sleep
 import os.path
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 init(autoreset=True)
 
@@ -19,7 +20,7 @@ Params:
 def check_win(mat, size):
    for row in range(size):
       i = j = count = 0
-      for i in range(size):
+      while(i<size):
          while(i<size and mat[row][i]==' '):
             i += 1
          j = i
@@ -204,6 +205,7 @@ This function checks if the opponent is about to win the game.
 If so, it returns the corresponding column number, otherwise -1.
 '''
 def check_opp_win(board, height, rd):
+   opp_col = -1
    for c in range(7):
       if(height[c]>=7 or height[c]<3):
          continue
@@ -220,30 +222,105 @@ def check_opp_win(board, height, rd):
          return [c, 1]
 
       if(opp_three):    # opponent about to win
-         return [c, -1]
+         opp_col = c
+
+   if(opp_col!=-1):
+      return [opp_col, -1]
+   else:
+      return [-1, 0]
+
+def plot_rd_num(rd_num_ls):
+   plt.plot(range(1,500001), rd_num_ls)
+   plt.xlabel('epochs')
+   plt.ylabel('rounds')
+   plt.show()
+
+def iterate_helper(board, height, rd, consec, rd_same):
+   for row in range(7):
+      i = j = count = 0
+      while(i<7):
+         while(i<7 and board[row][i]==' '):
+            i += 1
+         j = i
+         while(j<7 and board[row][i]==board[row][j]):
+            j += 1
+
+         if(j<7 and board[row][i] != rd):
+            i = j
+            continue
+
+         # two or three chesses in a row
+         if(j - i == consec):
+            if(i > 0 and height[i-1]==row):
+               #  print("Block 1")
+               return [i-1, 1]
+            elif(j < 7 and height[j]==row):
+               #  print("Block 2")
+               return [j, 1]
+
+         i = j
+
+   if(not rd_same and consec==3):
+      for row in range(7):
+         i = j = count = 0
+         while(i<7):
+            while(i<7 and board[row][i]==' '):
+               i += 1
+            j = i
+            while(j<7 and board[row][i]==board[row][j]):
+               j += 1
+
+            if(j<7 and board[row][i] != rd):
+               i = j
+               continue
+
+            # two or three chesses in a row
+            if(j - i == consec):
+               if(i > 0 and height[i-1]==row-1):
+                  #  print("Block 3")
+                  return [i-1, 2]
+               elif(j < 7 and height[j]==row-1):
+                  #  print("Block 4")
+                  return [j, 2]
+
+            i = j
 
    return [-1, 0]
 
+def check_horizontal(board, height, rd):
+   # 优先级排行：
+   # 自己的3连
+   # 对手的3连
+   # 对手的2连
+   # 自己的2连
 
-def check_horizontal(board, height):
-   left, right = 0, 0
-   for c in range(1, 7):
-      if(height[c]==height[left] and board[height[c]-1][c]==board[height[left]-1][left]):
-         right = c
-      else:
-         left = c
+   col, sign = iterate_helper(board, height, rd, 3, True)
+   if(sign!=0):
+      #  print("self 3")
+      return [col, sign]
 
-      if(right - left > 0 and left != 0 and right != 7):
-         if(height[left-1]==height[left]-1 or height[left]==1):
-            return [left-1, 1]
-         elif(height[right+1]==height[right]-1 or height[right]==1):
-            return [right+1, 1]
-         elif(height[left-1]==height[left]-2):
-            return [left-1, 2]
-         elif(height[right+1]==height[right]-2):
-            return [right+1, 2]
+   if(rd=='x'):
+      col,sign = iterate_helper(board, height, 'o', 3, False)
+   else:
+      col,sign = iterate_helper(board, height, 'x', 3, False)
+   if(sign!=0):
+      #  print("opp 3")
+      return [col, sign]
 
-      return [-1, 0]
+   if(rd=='x'):
+      col,sign = iterate_helper(board, height, 'o', 2, False)
+   else:
+      col,sign = iterate_helper(board, height, 'x', 2, False)
+   if(sign!=0):
+      #  print("opp 2")
+      return [col, sign]
+
+   col, sign = iterate_helper(board, height, rd, 2, True)
+   if(sign!=0):
+      #  print("self 2")
+      return [col, sign]
+
+   return [-1, 0]
 
 
 def calc_reward(code, flag):
@@ -272,11 +349,21 @@ def calc_reward(code, flag):
 
    return reward
 
+def normalize(ls):
+   floor = min(ls)
+   if(floor<0):
+      ls = list(map(lambda x: x-floor, ls))
+
+   ls = list(map(lambda x: x/sum(ls), ls))
+   return ls
+
 def playerVScomputer(q_table):
    board = [[' ' for col in range(7)] for row in range(7)]
    height = {i:0 for i in range(7)}
    rd = 1
    rd_num = 0
+
+   last_move = list()
 
    while(True):
       if(rd_num==48):
@@ -289,7 +376,11 @@ def playerVScomputer(q_table):
 
          if(current_code not in q_table):
             q_table[current_code] = np.random.uniform(size=7)
+            print("Not in q_table")
+         else:
+            print("In q_table")
 
+         #  print(q_table[current_code])
          # Check if current player is about to win or its opponent is about to win
          col, sign = check_opp_win(board, height, 'x')
          if(sign!=0):
@@ -297,18 +388,26 @@ def playerVScomputer(q_table):
                q_table[current_code][i] = -100000
             q_table[current_code][col] += 200000
 
-         col, sign = check_horizontal(board, height)
-         if(sign==0):
-            q_table[current_code][col] += 50
+         col, sign = check_horizontal(board, height, 'x')
+         if(sign==1):
+            q_table[current_code][col] += 5
          elif(sign==2):
-            q_table[current_code][col] -= 20
+            q_table[current_code][col] -= 2
 
          next_move = np.argmax(q_table[current_code])
+         prob_ls = normalize(q_table[current_code])
+         print('preference of each column:')
+         for i in range(7):
+            print('column ' + str(i+1) + ': ' + str(round(prob_ls[i], 4)))
 
          k = 6
          while(height[next_move]>=7):
             next_move = np.where(np.argsort(q_table[current_code])==k)[0][0]
             k -= 1
+
+         last_move.append([current_code, next_move])   # save as historical move
+         if(len(last_move)>6):
+            last_move.pop(0)
 
          board[height[next_move]][next_move] = 'x'
          height[next_move] += 1
@@ -358,18 +457,131 @@ def playerVScomputer(q_table):
       else:
          print_board(board, 7)
 
+      # Hyper-params
+      alpha = 0.2
+
       if(winner!='n'):
          if(winner=='x'):
-            q_table[current_code][next_move] += 500
+            for index in range(len(last_move)):
+               old_value = q_table[last_move[index][0]][last_move[index][1]]
+               new_value = (1 - alpha) * old_value + ((index+1)/2) * alpha * 60
+               q_table[last_move[index][0]][last_move[index][1]] = new_value
             x_wins()
          else:
-            q_table[current_code][next_move] -= 100
-            q_table[current_code][col] += 5
+            for index in range(len(last_move)):
+               old_value = q_table[last_move[index][0]][last_move[index][1]]
+               new_value = (1 - alpha) * old_value - ((index+1)/2) * alpha * 30
+               q_table[last_move[index][0]][last_move[index][1]] = new_value
+            q_table[current_code][col] += 2
             o_wins()
          break
 
       rd_num += 1
 
+   return q_table
+
+def finetune(q_table, opp_table, board, height):
+
+   loser_count = 0
+   loser = False
+
+   for i in range(50000):
+      print('epoch', i+1, '     Q table size:', len(q_table))
+      board = [[' ' for col in range(7)] for row in range(7)]
+      height = {i:0 for i in range(7)}
+      rd = 1
+      rd_num = 0
+
+      last_move = list()
+      if(not loser):
+         last_seq = list()
+
+      while(True):
+         if(rd_num==48):
+            break
+
+         if(rd==1):
+            current_code = encode(board, height)
+
+            if(current_code not in q_table):
+               q_table[current_code] = np.random.uniform(size=7)
+
+            #  print(q_table[current_code])
+            # Check if current player is about to win or its opponent is about to win
+            col, sign = check_opp_win(board, height, 'x')
+            if(sign!=0):
+               for i in range(7):
+                  q_table[current_code][i] = -100000
+               q_table[current_code][col] += 200000
+
+            col, sign = check_horizontal(board, height, 'x')
+            if(sign==1):
+               q_table[current_code][col] += 5
+            elif(sign==2):
+               q_table[current_code][col] -= 2
+
+            next_move = np.argmax(q_table[current_code])
+
+            k = 6
+            while(height[next_move]>=7):
+               next_move = np.where(np.argsort(q_table[current_code])==k)[0][0]
+               k -= 1
+
+            last_move.append([current_code, next_move])   # save as historical move
+            if(len(last_move)>6):
+               last_move.pop(0)
+
+            board[height[next_move]][next_move] = 'x'
+            height[next_move] += 1
+
+         else:
+            if(loser and rd_num//2 < len(last_seq)):
+               next_move = last_seq[rd_num//2]
+               while(height[next_move]>=7):
+                  next_move = np.random.randint(0,7)
+
+            else:
+               next_move = np.random.randint(0,7)
+               while(height[next_move]>=7):
+                  next_move = np.random.randint(0,7)
+               last_seq.append(next_move)
+
+
+            board[height[next_move]][next_move] = 'o'
+            height[next_move] += 1
+
+         rd = -rd
+
+         winner = check_win(board, 7)
+         if(winner=='n'):
+            winner = check_win(list(zip(*board)), 7)
+            if(winner=='n'):
+               winner = diag_check(board, 7)
+
+
+         # Hyper-params
+         alpha = 0.2
+
+         if(winner!='n'):
+            if(winner=='x'):
+               for index in range(len(last_move)):
+                  old_value = q_table[last_move[index][0]][last_move[index][1]]
+                  new_value = (1 - alpha) * old_value + ((index+1)/2) * alpha * 60
+                  q_table[last_move[index][0]][last_move[index][1]] = new_value
+               loser = False
+            else:
+               for index in range(len(last_move)):
+                  old_value = q_table[last_move[index][0]][last_move[index][1]]
+                  new_value = (1 - alpha) * old_value - ((index+1)/2) * alpha * 30
+                  q_table[last_move[index][0]][last_move[index][1]] = new_value
+               q_table[current_code][next_move] += 2
+               loser = True
+               loser_count += 1
+            break
+
+         rd_num += 1
+
+   print("Failed Games Count:", loser_count)
    return q_table
 
 
@@ -417,7 +629,9 @@ if('-rl' in sys.argv):
       x_win_c = 0
       o_win_c = 0
       epoch = 0
-      for i in range(200000):
+
+      rd_num_ls = list()
+      for i in range(500000):
          epoch += 1
 
          print('epoch', epoch, '     Q table size:', len(q_table), '     Opp table size:', len(opp_table))
@@ -425,17 +639,16 @@ if('-rl' in sys.argv):
          height = {i:0 for i in range(7)}
          rd = 1
          rd_num = 0
-         last_code = 0
-         last_move = 0
+         last_move = list()
+         opp_last_move = list()
 
          # Hyper-params
          alpha = 0.2
          gamma = 0.6
+         ep = 0.1
 
-         while(True):
-            if(rd_num==48):
-               print('Checkmate!')
-               break
+         # One game (epoch)
+         while(rd_num<48):
 
             if(rd==1):
                # Computer's Round
@@ -451,11 +664,11 @@ if('-rl' in sys.argv):
                if(sign!=0):
                   q_table[current_code][col] += 100000
 
-               col, sign = check_horizontal(board, height)
+               col, sign = check_horizontal(board, height, 'x')
                if(sign==1):
-                  q_table[current_code][col] += 50
+                  q_table[current_code][col] += 5
                elif(sign==2):
-                  q_table[current_code][col] -= 20
+                  q_table[current_code][col] -= 2
 
                next_move = 0
                new_code = 0
@@ -464,14 +677,16 @@ if('-rl' in sys.argv):
                epsilon = random.uniform(0, 1)
 
                # random move
-               if(epsilon<0.1):
+               if(epsilon<ep):
                   next_move = random.randint(0, 6)
 
                # move according to the max q_table entry
                else:
                   next_move = np.argmax(q_table[current_code])
 
-               last_code, last_move = current_code, next_move  # save the current state and action
+               last_move.append([current_code, next_move])   # save as historical move
+               if(len(last_move)>4):
+                  last_move.pop(0)
 
                #  print("Computer placed at column", next_move+1)
 
@@ -505,6 +720,17 @@ if('-rl' in sys.argv):
                if(new_code not in q_table):
                   q_table[new_code] = np.random.uniform(size=7)
 
+               # Check if current player is about to win or its opponent is about to win
+               col, sign = check_opp_win(board, height, 'x')
+               if(sign!=0):
+                  q_table[new_code][col] += 10
+
+               col, sign = check_horizontal(board, height, 'x')
+               if(sign==1):
+                  q_table[new_code][col] += 5
+               elif(sign==2):
+                  q_table[new_code][col] -= 2
+
                next_max = np.max(q_table[new_code])
 
                # 刚刚只是假想，现在还原棋盘
@@ -527,11 +753,11 @@ if('-rl' in sys.argv):
                if(sign==1 or sign==-1):
                   opp_table[current_code][col] += 100000
 
-               col, sign = check_horizontal(board, height)
+               col, sign = check_horizontal(board, height, 'o')
                if(sign==1):
-                  opp_table[current_code][col] += 50
+                  opp_table[current_code][col] += 5
                elif(sign==2):
-                  opp_table[current_code][col] -= 20
+                  opp_table[current_code][col] -= 2
 
                next_move = 0
                new_code = 0
@@ -540,14 +766,16 @@ if('-rl' in sys.argv):
                epsilon = random.uniform(0, 1)
 
                # random move
-               if(epsilon<0.1):
+               if(epsilon<ep):
                   next_move = random.randint(0, 6)
 
                # move according to the max q_table entry
                else:
                   next_move = np.argmax(opp_table[current_code])
 
-               opp_last_code, opp_last_move = current_code, next_move  # save the current state and action
+               opp_last_move.append([current_code, next_move])
+               if(len(opp_last_move)>4):
+                  opp_last_move.pop(0)
 
                #  print("Computer placed at column", next_move+1)
 
@@ -579,6 +807,17 @@ if('-rl' in sys.argv):
                if(new_code not in opp_table):
                   opp_table[new_code] = np.random.uniform(size=7)
 
+               # Check if current player is about to win or its opponent is about to win
+               col, sign = check_opp_win(board, height, 'o')
+               if(sign!=0):
+                  opp_table[new_code][col] += 10
+
+               col, sign = check_horizontal(board, height, 'o')
+               if(sign==1):
+                  opp_table[new_code][col] += 10
+               elif(sign==2):
+                  opp_table[new_code][col] -= 5
+
                next_max = np.max(opp_table[new_code])
 
                # 刚刚只是假想，现在还原棋盘
@@ -605,44 +844,46 @@ if('-rl' in sys.argv):
                if(winner=='x'):
                   #  x_wins()
                   x_win_c += 1
-                  for mv in range(7):
-                     if(mv==last_move):
-                        q_table[last_code][last_move] += 100000
-                     else:
-                        q_table[last_code][mv] -= 100000
 
-                  try:
-                     old_value = opp_table[opp_last_code][opp_last_move]
-                     new_value = (1 - alpha) * old_value - alpha * 50
-                     opp_table[opp_last_code][opp_last_move] = new_value
-                  except:
-                     pass
+                  for index in range(len(last_move)):
+                     old_value = q_table[last_move[index][0]][last_move[index][1]]
+                     new_value = (1 - alpha) * old_value + ((index+1)/2) * alpha * 50
+                     q_table[last_move[index][0]][last_move[index][1]] = new_value
+
+                  for index in range(len(opp_last_move)):
+                     old_value = opp_table[opp_last_move[index][0]][opp_last_move[index][1]]
+                     new_value = (1 - alpha) * old_value - ((index+1)/2) * alpha * 25
+                     opp_table[opp_last_move[index][0]][opp_last_move[index][1]] = new_value
                else:
                   #  o_wins()
                   o_win_c += 1
-                  try:
-                     for mv in range(7):
-                        if(mv==last_move):
-                           opp_table[opp_last_code][opp_last_move] += 100000
-                        else:
-                           opp_table[opp_last_code][mv] -= 100000
-                  except:
-                     pass
+                  for index in range(len(opp_last_move)):
+                     old_value = opp_table[opp_last_move[index][0]][opp_last_move[index][1]]
+                     new_value = (1 - alpha) * old_value + ((index+1)/2) * alpha * 50
+                     opp_table[opp_last_move[index][0]][opp_last_move[index][1]] = new_value
 
-                  old_value = q_table[last_code][last_move]
-                  new_value = (1 - alpha) * old_value - alpha * 50
-                  q_table[last_code][last_move] = new_value
+                  for index in range(len(last_move)):
+                     old_value = q_table[last_move[index][0]][last_move[index][1]]
+                     new_value = (1 - alpha) * old_value - ((index+1)/2) * alpha * 25
+                     q_table[last_move[index][0]][last_move[index][1]] = new_value
 
                break
 
             rd_num += 1
 
          print('round counts:', rd_num)
+         rd_num_ls.append(rd_num)
 
       print('x wins:', x_win_c)
       print('o wins:', o_win_c)
+      #  plot_rd_num(rd_num_ls)
+   elif('-finetune' in sys.argv):
+      board = [[' ' for col in range(7)] for row in range(7)]
+      height = {i:0 for i in range(7)}
+      q_table = finetune(q_table, opp_table, board, height)
    else:
-      q_table = playerVScomputer(q_table)
+      for i in range(10):
+         q_table = playerVScomputer(q_table)
 
    print('Saving AI data...')
    # Save the partial Q-table as a dict
