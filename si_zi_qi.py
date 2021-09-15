@@ -235,6 +235,21 @@ def plot_rd_num(rd_num_ls):
    plt.ylabel('rounds')
    plt.show()
 
+def space_check(board, height, i, j, row, opp):
+   if(i>6):
+      return False
+
+   ava_count = j - i
+   while(i>=0 and board[row][i]!=opp):
+      ava_count += 1
+      i -= 1
+
+   while(j<7 and board[row][j]!=opp):
+      ava_count += 1
+      j += 1
+
+   return ava_count > 3
+
 def iterate_helper(board, height, rd, consec, rd_same):
    for row in range(7):
       i = j = count = 0
@@ -249,8 +264,12 @@ def iterate_helper(board, height, rd, consec, rd_same):
             i = j
             continue
 
+         inverse = {'o':'x', 'x':'o'}
+
+         space_4 = space_check(board, height, i, j, row, inverse[rd])
+
          # two or three chesses in a row
-         if(j - i == consec):
+         if(j - i == consec and space_4):
             if(i > 0 and height[i-1]==row):
                #  print("Block 1")
                return [i-1, 1]
@@ -260,6 +279,7 @@ def iterate_helper(board, height, rd, consec, rd_same):
 
          i = j
 
+   # 对手三连了，不可自寻死路
    if(not rd_same and consec==3):
       for row in range(7):
          i = j = count = 0
@@ -323,6 +343,87 @@ def check_horizontal(board, height, rd):
    return [-1, 0]
 
 
+def diag_consec_check(mat, height, rd, consec, rd_same):
+   dp = [[[1,1] for col in range(7)] for row in range(7)]
+   for r in range(7):
+      for c in range(7):
+         if(r==0 or mat[r][c]==' '):
+            continue
+         if(c==0):
+            if(mat[r][c]==mat[r-1][c+1]):
+               dp[r][c][1] = dp[r-1][c+1][1] + 1
+         elif(c==6):
+            if(mat[r][c]==mat[r-1][c-1]):
+               dp[r][c][0] = dp[r-1][c-1][0] + 1
+         else:
+            if(mat[r][c]==mat[r-1][c-1]):
+               dp[r][c][0] = dp[r-1][c-1][0] + 1
+            if(mat[r][c]==mat[r-1][c+1]):
+               dp[r][c][1] = dp[r-1][c+1][1] + 1
+
+         # left diagonal danger/chance
+         if(dp[r][c][0]==3):
+            if(c<6 and r==height[c+1]+2):
+               return [c+1, 1]
+            elif(c-3>0 and r-3==height[c-3]):
+               return [c-3, 1]
+            elif(c<6 and r==height[c+1]+3):
+               return [c+1, 2]
+            elif(c-3>0 and r-3==height[c-3]+1):
+               return [c-3, 2]
+
+         # right diagonal danger/chance
+         elif(dp[r][c][1]==3):
+            if(c>0 and r==height[c-1]+2):
+               return [c-1, 1]
+            elif(c+3<6 and r+3==height[c+3]):
+               return [c+3, 1]
+            elif(c>0 and r==height[c-1]+3):
+               return [c-1, 2]
+            elif(c+3<6 and r+3==height[c+3]+1):
+               return [c+3, 2]
+
+         # left diagonal little chance
+         elif(dp[r][c][0]==2):
+            if(c<6 and r==height[c+1]+2):
+               return [c+1, 1]
+            elif(c-2>0 and r-2==height[c-2]):
+               return [c-2, 1]
+
+         # right diagonal little chance
+         elif(dp[r][c][1]==2):
+            if(c>0 and r==height[c-1]+2):
+               return [c-1, 1]
+            elif(c+2<6 and r+2==height[c+2]):
+               return [c+2, 1]
+
+   return [-1, 0]
+
+
+
+def diag_danger(board, height, rd):
+   # 优先级排行：
+   # 自己的3连
+   # 对手的3连
+   # 对手的2连
+   # 自己的2连
+
+   inverse_map = {'x':'o', 'o':'x'}
+
+   check_code = diag_consec_check(board, height, rd, 3, True)
+   if(check_code[1]!=0):
+      return check_code
+   check_code = diag_consec_check(board, height, inverse_map[rd], 3, False)
+   if(check_code[1]!=0):
+      return check_code
+   check_code = diag_consec_check(board, height, inverse_map[rd], 2, False)
+   if(check_code[1]!=0):
+      return check_code
+   check_code = diag_consec_check(board, height, rd, 2, True)
+
+   return check_code
+
+
 def calc_reward(code, flag):
    board = code_to_board(decode(code))
    winner = check_win(board, 7)
@@ -335,17 +436,14 @@ def calc_reward(code, flag):
 
    if(flag==1):
       if(winner=='x'):
-         reward = 100
+         reward = 200
       elif(winner=='o'):
-         reward = -50
+         reward = -100
    else:
       if(winner=='o'):
-         reward = 100
+         reward = 200
       elif(winner=='x'):
-         reward = -50
-
-   if(winner=='n'):
-      reward = -1
+         reward = -100
 
    return reward
 
@@ -382,6 +480,7 @@ def playerVScomputer(q_table):
 
          #  print(q_table[current_code])
          # Check if current player is about to win or its opponent is about to win
+         print(normalize(q_table[current_code]))
          col, sign = check_opp_win(board, height, 'x')
          if(sign!=0):
             for i in range(7):
@@ -389,6 +488,12 @@ def playerVScomputer(q_table):
             q_table[current_code][col] += 200000
 
          col, sign = check_horizontal(board, height, 'x')
+         if(sign==1):
+            q_table[current_code][col] += 5
+         elif(sign==2):
+            q_table[current_code][col] -= 2
+
+         col, sign = diag_danger(board, height, 'x')
          if(sign==1):
             q_table[current_code][col] += 5
          elif(sign==2):
@@ -515,6 +620,12 @@ def finetune(q_table, opp_table, board, height):
                q_table[current_code][col] += 200000
 
             col, sign = check_horizontal(board, height, 'x')
+            if(sign==1):
+               q_table[current_code][col] += 5
+            elif(sign==2):
+               q_table[current_code][col] -= 2
+
+            col, sign = diag_danger(board, height, 'x')
             if(sign==1):
                q_table[current_code][col] += 5
             elif(sign==2):
@@ -670,6 +781,12 @@ if('-rl' in sys.argv):
                elif(sign==2):
                   q_table[current_code][col] -= 2
 
+               col, sign = diag_danger(board, height, 'x')
+               if(sign==1):
+                  q_table[current_code][col] += 5
+               elif(sign==2):
+                  q_table[current_code][col] -= 2
+
                next_move = 0
                new_code = 0
                #  sleep(0.1)
@@ -731,6 +848,12 @@ if('-rl' in sys.argv):
                elif(sign==2):
                   q_table[new_code][col] -= 2
 
+               col, sign = diag_danger(board, height, 'x')
+               if(sign==1):
+                  q_table[current_code][col] += 5
+               elif(sign==2):
+                  q_table[current_code][col] -= 2
+
                next_max = np.max(q_table[new_code])
 
                # 刚刚只是假想，现在还原棋盘
@@ -754,6 +877,12 @@ if('-rl' in sys.argv):
                   opp_table[current_code][col] += 100000
 
                col, sign = check_horizontal(board, height, 'o')
+               if(sign==1):
+                  opp_table[current_code][col] += 5
+               elif(sign==2):
+                  opp_table[current_code][col] -= 2
+
+               col, sign = diag_danger(board, height, 'o')
                if(sign==1):
                   opp_table[current_code][col] += 5
                elif(sign==2):
@@ -817,6 +946,12 @@ if('-rl' in sys.argv):
                   opp_table[new_code][col] += 10
                elif(sign==2):
                   opp_table[new_code][col] -= 5
+
+               col, sign = diag_danger(board, height, 'o')
+               if(sign==1):
+                  opp_table[current_code][col] += 5
+               elif(sign==2):
+                  opp_table[current_code][col] -= 2
 
                next_max = np.max(opp_table[new_code])
 
